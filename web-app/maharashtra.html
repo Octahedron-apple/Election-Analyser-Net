@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Election Analyzer — Maharashtra</title>
+  <link rel="stylesheet" href="static/state.css">
+  <style>
+    :root {
+      --accent: #1a4a6e;
+      --accent-mid: #2a6a9a;
+      --accent-light: #e8eef5;
+    }
+
+    .hero {
+      background: linear-gradient(160deg, #0a2a4a 0%, #1a4a72 50%, #0f3a58 100%);
+    }
+
+    .nav-tab.active {
+      background: var(--accent);
+    }
+
+    .info-step-num {
+      background: var(--accent);
+    }
+
+    .pred-btn {
+      background: var(--accent);
+    }
+
+    .status-refresh-btn:hover {
+      border-color: var(--accent-mid);
+      color: var(--accent);
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav>
+    <div class="nav-left">
+      <a class="nav-back" href="">← Back</a>
+      <div class="nav-title-block">
+        <div class="nav-page-title">Election Analyzer</div>
+        <div class="nav-page-sub">Maharashtra · Assembly 2024</div>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showPage('dashboard',this)">Dashboard</button>
+      <button class="nav-tab" onclick="showPage('candidates',this)">Candidates <span
+          class="nav-badge">255</span></button>
+      <button class="nav-tab" onclick="showPage('predictions',this)">Voter Predictions</button>
+    </div>
+  </nav>
+
+  <div id="page-dashboard" class="page active">
+    <div class="hero">
+      <div class="hero-inner">
+        <h1>Maharashtra<br><em>Political Intelligence</em></h1>
+        <p class="hero-desc">Assembly 2024 — candidate profiling, financial analysis, and electoral intelligence across
+          Maharashtra constituencies.</p>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <div class="hero-stat-num" id="hs-total">255</div>
+            <div class="hero-stat-lbl">Candidates</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-num" id="hs-parties">—</div>
+            <div class="hero-stat-lbl">Parties</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-num" id="hs-clean">—</div>
+            <div class="hero-stat-lbl">Clean Record</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-num" id="hs-grads">—</div>
+            <div class="hero-stat-lbl">Graduates+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-label">Overview</div>
+      <div class="section-title" style="margin-bottom:1.5rem;">Key <em>Metrics</em></div>
+      <div class="stat-grid" id="stat-grid"></div>
+      <div class="dash-grid">
+        <div class="chart-card">
+          <div class="chart-card-title">🏛️ Top Parties by Candidate Count</div>
+          <div class="bar-chart" id="party-chart"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">🎓 Education Level Distribution</div>
+          <div class="bar-chart" id="edu-chart"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-candidates" class="page">
+    <div class="section">
+      <div class="section-label">Browse All</div>
+      <div class="section-title" style="margin-bottom:1.5rem;">Candidate <em>Profiles</em></div>
+      <div class="controls">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search candidate name or party…"
+            oninput="filterCandidates()">
+        </div>
+        <select class="filter-select" id="partyFilter" onchange="filterCandidates()">
+          <option value="">All Parties</option>
+        </select>
+        <select class="filter-select" id="eduFilter" onchange="filterCandidates()">
+          <option value="">All Education</option>
+        </select>
+        <select class="filter-select" id="crimFilter" onchange="filterCandidates()">
+          <option value="">Criminal Cases</option>
+          <option value="0">No Cases (0)</option>
+          <option value="1">1–5 Cases</option>
+          <option value="5">5+ Cases</option>
+        </select>
+        <div class="results-count" id="results-count"></div>
+      </div>
+      <div class="cards-grid" id="candidates-grid"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+
+  <div id="page-predictions" class="page">
+    <div class="section">
+      <div class="section-label">ML Powered</div>
+      <div class="section-title" style="margin-bottom:1.75rem;">Enter Voter <em>Demographics</em></div>
+
+      <div class="pred-layout">
+        <div>
+          <div class="pred-card">
+            <div class="pred-card-title">Enter Voter Demographics</div>
+            <div class="pred-card-sub">Fill in the demographic details to predict the likely party preference of this
+              voter profile.</div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label class="form-label">Age (Years)</label>
+                <input type="number" class="form-select" id="pred-age" min="18" max="100" placeholder="e.g. 25">
+              </div>
+              <div class="form-field">
+                <label class="form-label">District</label>
+                <select class="form-select" id="pred-district">
+                  <option value="" disabled selected>Select District</option>
+                  <option value="Ahmednagar">Ahmednagar</option>
+                  <option value="Akola">Akola</option>
+                  <option value="Amravati">Amravati</option>
+                  <option value="Aurangabad">Aurangabad (Chh. Sambhajinagar)</option>
+                  <option value="Beed">Beed</option>
+                  <option value="Bhandara">Bhandara</option>
+                  <option value="Buldhana">Buldhana</option>
+                  <option value="Chandrapur">Chandrapur</option>
+                  <option value="Dhule">Dhule</option>
+                  <option value="Gadchiroli">Gadchiroli</option>
+                  <option value="Gondiya">Gondiya</option>
+                  <option value="Hingoli">Hingoli</option>
+                  <option value="Jalgaon">Jalgaon</option>
+                  <option value="Jalna">Jalna</option>
+                  <option value="Kolhapur">Kolhapur</option>
+                  <option value="Latur">Latur</option>
+                  <option value="Mumbai City">Mumbai City</option>
+                  <option value="Mumbai Suburban">Mumbai Suburban</option>
+                  <option value="Nagpur">Nagpur</option>
+                  <option value="Nanded">Nanded</option>
+                  <option value="Nandurbar">Nandurbar</option>
+                  <option value="Nashik">Nashik</option>
+                  <option value="Osmanabad">Osmanabad (Dharashiv)</option>
+                  <option value="Palghar">Palghar</option>
+                  <option value="Parbhani">Parbhani</option>
+                  <option value="Pune">Pune</option>
+                  <option value="Raigad">Raigad</option>
+                  <option value="Ratnagiri">Ratnagiri</option>
+                  <option value="Sangli">Sangli</option>
+                  <option value="Satara">Satara</option>
+                  <option value="Sindhudurg">Sindhudurg</option>
+                  <option value="Solapur">Solapur</option>
+                  <option value="Thane">Thane</option>
+                  <option value="Wardha">Wardha</option>
+                  <option value="Washim">Washim</option>
+                  <option value="Yavatmal">Yavatmal</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Gender</label>
+                <select class="form-select" id="pred-gender">
+                  <option value="" disabled selected>Select</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Geography</label>
+                <select class="form-select" id="pred-geography">
+                  <option value="" disabled selected>Select</option>
+                  <option value="Rural">Rural</option>
+                  <option value="Urban">Urban</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Caste</label>
+                <select class="form-select" id="pred-caste">
+                  <option value="" disabled selected>Select</option>
+                  <option value="SC">SC</option>
+                  <option value="ST">ST</option>
+                  <option value="NT_VJ">NT VJ</option>
+                  <option value="Muslim">Muslim</option>
+                  <option value="Kunbi">Kunbi</option>
+                  <option value="OBC">OBC</option>
+                  <option value="Maratha">Maratha</option>
+                  <option value="General">General</option>
+                  <option value="Others">Others</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label class="form-label">Occupation</label>
+                <select class="form-select" id="pred-occupation">
+                  <option value="" disabled selected>Select</option>
+                  <option value="Unemployed">Unemployed</option>
+                  <option value="Student">Student</option>
+                  <option value="Labour">Labour</option>
+                  <option value="Farmer">Farmer</option>
+                  <option value="Skilled Professional">Skilled Professional</option>
+                  <option value="Self Occupation & Small Shop">Self Occupation & Small Shop</option>
+                  <option value="Housewife">Housewife</option>
+                  <option value="Pvt. Service">Pvt. Service</option>
+                  <option value="Govt. Service">Govt. Service</option>
+                  <option value="Others">Others</option>
+                </select>
+              </div>
+            </div>
+            <button class="pred-btn" id="pred-run-btn" onclick="runPrediction()">Predict Voting Preference</button>
+
+            <div class="result-box" id="prediction-result">
+              <div class="result-label">Predicted Voting Preference</div>
+              <div class="result-party" id="predicted-party-text">—</div>
+              <div class="result-sub" id="result-sub-text"></div>
+              <div class="proba-bars" id="proba-bars"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-overlay" onclick="closeModal(event)">
+    <div id="modal-box">
+      <button id="modal-close" onclick="closeModalDirect()">✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <footer>
+    Made with ❤️ by <strong>Data Decoders</strong>
+  </footer>
+
+  <script type="module" src="/src/maharashtra.js"></script>
+</body>
+
+</html>

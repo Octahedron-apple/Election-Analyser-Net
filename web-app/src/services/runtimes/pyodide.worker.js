@@ -31,15 +31,14 @@ self.onmessage = async (event) => {
     const pyodide = await getPyodide();
     currentTxId = txId;
 
-    // Create a sandboxed dictionary for execution to prevent memory leaks
-    const namespace = pyodide.globals.get('dict')();
-    namespace.set('INPUT_DATA', inputStringData || '');
+    // Inject INPUT_DATA into global namespace
+    pyodide.globals.set('INPUT_DATA', inputStringData || '');
 
     // Load necessary packages based on imports in the python string
     await pyodide.loadPackagesFromImports(pythonCodeString);
 
-    // Run the Python script string asynchronously inside the sandbox
-    const result = await pyodide.runPythonAsync(pythonCodeString, { globals: namespace });
+    // Run the Python script string asynchronously in the global scope
+    const result = await pyodide.runPythonAsync(pythonCodeString);
 
     // Safe conversion of Python proxy results back to native JavaScript structures
     let output = result;
@@ -47,8 +46,6 @@ self.onmessage = async (event) => {
       output = result.toJs();
     }
     
-    // Explicitly release the Python memory space
-    namespace.destroy();
     if (result && typeof result.destroy === 'function') {
       result.destroy();
     }

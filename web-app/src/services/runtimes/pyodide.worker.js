@@ -1,4 +1,5 @@
-import { loadPyodide } from 'pyodide';
+// Use importScripts to load Pyodide classically (bypassing ES module dynamic import restrictions in workers)
+importScripts('https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js');
 
 let pyodidePromise = null;
 let currentTxId = null;
@@ -7,8 +8,7 @@ function getPyodide() {
   if (!pyodidePromise) {
     pyodidePromise = (async () => {
       const pyodide = await loadPyodide({
-        // Load from local public/pyodide folder to prevent cross-origin dynamic import errors
-        indexURL: './pyodide/',
+        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/',
         stdout: (text) => {
           self.postMessage({ txId: currentTxId, type: 'STDOUT', data: text });
         },
@@ -16,7 +16,6 @@ function getPyodide() {
           self.postMessage({ txId: currentTxId, type: 'STDERR', data: text });
         }
       });
-
       return pyodide;
     })();
   }

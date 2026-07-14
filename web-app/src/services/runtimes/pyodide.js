@@ -4,8 +4,7 @@ let worker = null;
 function getWorker() {
   if (!worker) {
     worker = new Worker(
-      new URL('./pyodide.worker.js', import.meta.url),
-      { type: 'module' }
+      new URL('./pyodide.worker.js', import.meta.url)
     );
 
     worker.onmessage = (event) => {

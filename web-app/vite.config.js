@@ -11,5 +11,8 @@ export default defineConfig({
         maharashtra: resolve(__dirname, 'maharashtra.html')
       }
     }
+  },
+  worker: {
+    format: 'es'
   }
 });

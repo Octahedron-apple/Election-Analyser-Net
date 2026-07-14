@@ -513,3 +513,10 @@ function showResultError(msg){
 
 buildDashboard();
 checkApiStatus();
+// Expose functions to the global window object for inline HTML event handlers
+window.showPage = showPage;
+window.runPrediction = runPrediction;
+window.closeModal = closeModal;
+window.closeModalDirect = closeModalDirect;
+window.filterCandidates = filterCandidates;
+window.openCandidateModal = openCandidateModal;

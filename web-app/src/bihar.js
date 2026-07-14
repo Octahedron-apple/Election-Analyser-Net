@@ -329,7 +329,7 @@ await main()
         document.getElementById('strategy-placeholder').style.display='none';
       }
     }else{showResultError('Prediction error: '+data.message);}
-  }catch(err){showResultError('Could not connect to the ML server.\nMake sure the FastAPI server is running on port 5000.');}
+  }catch(err){showResultError('Client-side Inference Error: ' + err.message);}
   finally{btn.textContent='🔮 Predict Voting Preference';btn.disabled=false;}
 }
 

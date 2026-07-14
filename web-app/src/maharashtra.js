@@ -457,7 +457,7 @@ await main()
         document.getElementById('proba-bars').innerHTML=sorted.map(([party,pct])=>`<div class="proba-row"><div class="proba-label">${party.length>12?party.slice(0,12)+'…':party}</div><div class="proba-track"><div class="proba-fill" style="width:${pct}%;background:${getPartyStyle(party).dot}"></div></div><div class="proba-pct">${pct}%</div></div>`).join('');
       }
     }else{showResultError('Prediction error: '+data.message);}
-  }catch(err){showResultError('Could not connect to the ML server.\nMake sure the FastAPI server is running on port 5000.');}
+  }catch(err){showResultError('Client-side Inference Error: ' + err.message);}
   finally{btn.textContent='🔮 Predict Voting Preference';btn.disabled=false;}
 }
 function showResultError(msg){

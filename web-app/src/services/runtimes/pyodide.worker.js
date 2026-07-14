@@ -7,8 +7,8 @@ function getPyodide() {
   if (!pyodidePromise) {
     pyodidePromise = (async () => {
       const pyodide = await loadPyodide({
-        // Default to CDN if local core is missing
-        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/',
+        // Load from local public/pyodide folder to prevent cross-origin dynamic import errors
+        indexURL: './pyodide/',
         stdout: (text) => {
           self.postMessage({ txId: currentTxId, type: 'STDOUT', data: text });
         },

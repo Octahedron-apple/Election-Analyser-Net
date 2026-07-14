@@ -269,52 +269,7 @@ function showPage(name,btn){
 }
 
 async function checkApiStatus(){
-  const el=document.getElementById('model-status-indicator');
-  const btn=document.getElementById('pred-run-btn');
-  btn.disabled=true;
-  btn.textContent='Requires AI Model';
-  
-  el.innerHTML=`
-    <div style="background: rgba(180,83,9,0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(180,83,9,0.2);">
-      <strong>AI Inference Opt-In</strong><br>
-      <span style="font-size: 0.85rem;">To run voter predictions locally in your browser, we need to download the Pyodide engine and ML models (<strong>~900MB total</strong>).</span>
-      <br><button id="load-ai-btn" style="margin-top: 8px; padding: 5px 10px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer;">Download & Load AI Models</button>
-      <div id="ai-load-progress" style="margin-top: 5px; font-size: 0.8rem; color: var(--ink-faint);"></div>
-    </div>
-  `;
-  
-  document.getElementById('load-ai-btn').onclick = async () => {
-    const pEl = document.getElementById('ai-load-progress');
-    const loadBtn = document.getElementById('load-ai-btn');
-    loadBtn.disabled = true;
-    loadBtn.textContent = 'Loading...';
-    pEl.textContent = 'Downloading Pyodide and Python packages...';
-    
-    subscribePythonLogs((log) => {
-        if(log.type === 'stdout' && log.text.includes('Successfully pre-loaded')) {
-            pEl.textContent = 'Packages loaded. Initializing...';
-        }
-    });
-
-    try {
-        const pyScriptRes = await fetch('/inference.py');
-        window.pythonLogic = await pyScriptRes.text();
-        
-        pEl.textContent = 'Loading AI model dependencies (this will take a while)...';
-        await runPython(window.pythonLogic); // This executes initialization
-        
-        pyodideReady = true;
-        el.innerHTML = '✅ <strong>AI Engine Ready</strong> <span style="font-size:.75rem">Models loaded locally in your browser.</span>';
-        btn.disabled = false;
-        btn.textContent = 'Run Prediction';
-        btn.style.opacity = '1';
-    } catch (err) {
-        pEl.textContent = 'Error loading models: ' + err.message;
-        pEl.style.color = '#c0392b';
-        loadBtn.disabled = false;
-        loadBtn.textContent = 'Retry Download';
-    }
-  };
+  // Removed
 }
 
 async function runPrediction(){
@@ -332,13 +287,17 @@ async function runPrediction(){
     showResultError('Please fill in all demographic fields before predicting.');
     return;
   }
-  btn.textContent='Analyzing…';btn.disabled=true;
+  btn.textContent='Loading Prediction Engine (first run may take a minute)...';btn.disabled=true;
   try{
     if (!pyodideReady) {
-      showResultError('AI Models not loaded.');
-      btn.textContent='Run Prediction';btn.disabled=false;
-      return;
+      const pyScriptRes = await fetch('./inference.py');
+      window.pythonLogic = await pyScriptRes.text();
+      await runPython(window.pythonLogic);
+      pyodideReady = true;
     }
+    
+    btn.textContent='Analyzing...';
+
     const rawResult = await runPython(`
 import json
 INPUT_DATA = json.dumps(${JSON.stringify(inputData)})

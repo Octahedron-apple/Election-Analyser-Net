@@ -36,6 +36,9 @@ self.onmessage = async (event) => {
     const namespace = pyodide.globals.get('dict')();
     namespace.set('INPUT_DATA', inputStringData || '');
 
+    // Load necessary packages based on imports in the python string
+    await pyodide.loadPackagesFromImports(pythonCodeString);
+
     // Run the Python script string asynchronously inside the sandbox
     const result = await pyodide.runPythonAsync(pythonCodeString, { globals: namespace });
 

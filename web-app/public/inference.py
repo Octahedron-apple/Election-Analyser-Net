@@ -76,16 +76,28 @@ class _CompatUnpickler(pickle.Unpickler):
 def _compat_loads(data):
     return _CompatUnpickler(_io.BytesIO(data)).load()
 
-def _patch_sklearn_model(obj):
-    # Recursively patch older scikit-learn estimators to work with newer scikit-learn
-    if hasattr(obj, 'steps'):
-        for name, step in obj.steps:
-            _patch_sklearn_model(step)
-    if hasattr(obj, 'transformers_'):
+def _patch_sklearn_model(obj, visited=None):
+    if visited is None:
+        visited = set()
+    if id(obj) in visited:
+        return obj
+    visited.add(id(obj))
+    
+    if type(obj).__name__ == "ColumnTransformer":
         if not hasattr(obj, '_name_to_fitted_passthrough'):
             obj._name_to_fitted_passthrough = {}
-        for name, transformer, cols in obj.transformers_:
-            _patch_sklearn_model(transformer)
+            
+    if hasattr(obj, '__dict__'):
+        for key, val in obj.__dict__.items():
+            _patch_sklearn_model(val, visited)
+            
+    if isinstance(obj, (list, tuple)):
+        for item in obj:
+            _patch_sklearn_model(item, visited)
+    elif isinstance(obj, dict):
+        for k, v in obj.items():
+            _patch_sklearn_model(v, visited)
+            
     return obj
 
 # ─────────────────────────────────────────────────────────────────────────────

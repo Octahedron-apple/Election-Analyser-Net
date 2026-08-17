@@ -431,7 +431,7 @@ async function runPrediction(){
   btn.textContent='Loading Prediction Engine (first run may take a minute)...';btn.disabled=true;
   try{
     if (!pyodideReady) {
-      const pyScriptRes = await fetch('./inference.py');
+      const pyScriptRes = await fetch(`./inference.py?t=${new Date().getTime()}`);
       window.pythonLogic = await pyScriptRes.text();
       await runPython(window.pythonLogic);
       pyodideReady = true;

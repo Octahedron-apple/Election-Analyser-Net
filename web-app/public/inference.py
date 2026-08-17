@@ -88,7 +88,7 @@ def _patch_sklearn_model(obj, visited=None):
             obj._name_to_fitted_passthrough = {}
     elif type(obj).__name__ == "LogisticRegression":
         if not hasattr(obj, 'multi_class'):
-            obj.multi_class = 'auto'
+            obj.multi_class = 'multinomial'
             
     if hasattr(obj, '__dict__'):
         for key, val in obj.__dict__.items():

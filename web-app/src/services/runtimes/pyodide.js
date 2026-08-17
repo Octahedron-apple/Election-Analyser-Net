@@ -43,10 +43,20 @@ function getWorker() {
 export async function runPython(code, inputStringData = '') {
   const txId = Math.random().toString(36).slice(2);
   const w = getWorker();
+  
+  let baseUrl = '';
+  if (typeof window !== 'undefined' && window.location) {
+    try {
+      baseUrl = new URL('.', window.location.href).href;
+      console.log('[pyodide.js] Calculated baseUrl:', baseUrl, 'from window.location.href:', window.location.href);
+    } catch (e) {
+      console.error('[pyodide.js] Error calculating baseUrl:', e);
+    }
+  }
 
   return new Promise((resolve, reject) => {
     pendingTasks.set(txId, { resolve, reject });
-    w.postMessage({ txId, pythonCodeString: code, inputStringData });
+    w.postMessage({ txId, pythonCodeString: code, inputStringData, baseUrl });
   });
 }
 

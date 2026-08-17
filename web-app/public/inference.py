@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import sklearn
 import pickle
 import json
 import pyodide.http
@@ -36,32 +37,43 @@ OCC_TIPS = {
     "Government Employee": "Focus on pay-commission benefits and job security.",
     "Business":            "Highlight lower taxes and ease-of-doing-business policies.",
 }
+import sys
+import numpy.core.numeric
+import numpy.core.multiarray
+sys.modules['numpy._core'] = numpy.core
+sys.modules['numpy._core.numeric'] = numpy.core.numeric
+sys.modules['numpy._core.multiarray'] = numpy.core.multiarray
 
 _model_cache = {}
 _bihar_df = None
 
-async def load_model(filename):
+async def load_model(filename, base_val=""):
     if filename in _model_cache:
         return _model_cache[filename]
-    resp = await pyodide.http.pyfetch(f"models/{filename}")
-    if resp.status != 200:
-        return None
-    content = await resp.bytes()
-    model = pickle.loads(content)
-    _model_cache[filename] = model
-    return model
+    url = f"{base_val}models/{filename}" if base_val else f"models/{filename}"
+    try:
+        resp = await pyodide.http.pyfetch(url)
+        if resp.status != 200:
+            return {"status": "error", "detail": f"Model {filename} not found. HTTP {resp.status} for URL: {url}"}
+        content = await resp.bytes()
+        model = pickle.loads(content)
+        _model_cache[filename] = model
+        return model
+    except Exception as e:
+        return {"status": "error", "detail": f"Exception fetching {url}: {str(e)}"}
 
-async def get_bihar_data():
+async def get_bihar_data(base_val=""):
     global _bihar_df
     if _bihar_df is None:
-        resp = await pyodide.http.pyfetch("models/bihar_election_dataset.csv")
+        url = f"{base_val}models/bihar_election_dataset.csv" if base_val else "models/bihar_election_dataset.csv"
+        resp = await pyodide.http.pyfetch(url)
         if resp.status == 200:
             content = await resp.bytes()
             _bihar_df = pd.read_csv(io.BytesIO(content))
     return _bihar_df
 
-async def get_suggestion_for_voter(party_name, voter_profile):
-    df = await get_bihar_data()
+async def get_suggestion_for_voter(party_name, voter_profile, base_val=""):
+    df = await get_bihar_data(base_val)
     if df is None:
         return []
 
@@ -131,7 +143,10 @@ async def get_suggestion_for_voter(party_name, voter_profile):
     return suggestions
 
 async def bihar_voter_predict(data):
-    model = await load_model("bihar_voter_prediction.pkl")
+    base_val = data.get("baseUrl", "")
+    model = await load_model("bihar_voter_prediction.pkl", base_val)
+    if isinstance(model, dict) and model.get("status") == "error":
+        return model
     if model is None:
         return {"status": "error", "detail": "Bihar model not found"}
     try:
@@ -156,7 +171,7 @@ async def bihar_voter_predict(data):
             classes = estimator.classes_
             proba = {str(c): round(float(p) * 100, 1) for c, p in zip(classes, proba_vals)}
         
-        suggestions = await get_suggestion_for_voter(str(prediction), input_dict)
+        suggestions = await get_suggestion_for_voter(str(prediction), input_dict, base_val)
 
         return {
             "status": "success",
@@ -168,12 +183,15 @@ async def bihar_voter_predict(data):
         return {"status": "error", "detail": str(e), "traceback": traceback.format_exc()}
 
 async def maha_voter_predict(data):
-    model = await load_model("maharashtra_voter_prediction.pkl")
+    base_val = data.get("baseUrl", "")
+    model = await load_model("maharashtra_voter_prediction.pkl", base_val)
+    if isinstance(model, dict) and model.get("status") == "error":
+        return model
     if model is None:
         return {"status": "error", "detail": "Maharashtra model not found"}
     try:
         input_dict = {
-            "age": data.get("Age"),
+            "age": int(data.get("Age", 0)),
             "gender": data.get("Gender", "").strip(),
             "district": data.get("District", "").strip(),
             "geography": data.get("Geography", "").strip(),
@@ -217,4 +235,3 @@ async def main():
     except Exception as e:
         return json.dumps({"status": "error", "detail": str(e), "traceback": traceback.format_exc()})
 
-main()

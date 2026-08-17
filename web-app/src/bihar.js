@@ -53,7 +53,8 @@ let _biharCSVRows = null;   // cached after first fetch
 async function loadBiharCSV() {
   if (_biharCSVRows) return _biharCSVRows;
   try {
-    const res = await fetch('/models/bihar_election_dataset.csv');
+    const url = new URL('models/bihar_election_dataset.csv', window.location.href).href;
+    const res = await fetch(url);
     const text = (await res.text()).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const lines = text.trim().split('\n');
     const headers = lines[0].split(',').map(h => h.trim());
@@ -274,8 +275,9 @@ async function checkApiStatus(){
 
 async function runPrediction(){
   const btn=document.getElementById('pred-run-btn');
-  const inputData={
+    const inputData={
     state:'bihar',
+    baseUrl: typeof window !== 'undefined' ? new URL('.', window.location.href).href : '',
     Age_Group:document.getElementById('pred-age').value,
     Gender:document.getElementById('pred-gender').value,
     Geography:document.getElementById('pred-geography').value,
@@ -328,7 +330,10 @@ await main()
         renderSuggestions(suggestions, data.predicted_party);
         document.getElementById('strategy-placeholder').style.display='none';
       }
-    }else{showResultError('Prediction error: '+data.message);}
+    }else{
+      console.error(data.traceback);
+      showResultError('Prediction error: '+data.detail);
+    }
   }catch(err){showResultError('Client-side Inference Error: ' + err.message);}
   finally{btn.textContent='🔮 Predict Voting Preference';btn.disabled=false;}
 }
@@ -381,10 +386,10 @@ function showResultError(msg){
 buildDashboard();
 checkApiStatus();
 
-// Expose functions to the global window object for inline HTML event handlers
 window.showPage = showPage;
 window.runPrediction = runPrediction;
 window.closeModal = closeModal;
 window.closeModalDirect = closeModalDirect;
 window.filterCandidates = filterCandidates;
-window.openCandidateModal = openCandidateModal;
+window.openCandidateModal = openModal;
+window.openModal = openModal;

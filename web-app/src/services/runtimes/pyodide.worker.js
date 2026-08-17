@@ -3,6 +3,7 @@ importScripts('https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js');
 
 let pyodidePromise = null;
 let currentTxId = null;
+let appBaseUrl = '';
 
 function getPyodide() {
   if (!pyodidePromise) {
@@ -23,16 +24,25 @@ function getPyodide() {
 }
 
 self.onmessage = async (event) => {
-  const { txId, pythonCodeString, inputStringData } = event.data;
+  const { txId, pythonCodeString, inputStringData, baseUrl } = event.data;
   
   if (!txId) return;
+  if (baseUrl) {
+    appBaseUrl = baseUrl;
+    console.log('[pyodide.worker.js] Received baseUrl from main thread:', appBaseUrl);
+  }
 
   try {
     const pyodide = await getPyodide();
     currentTxId = txId;
 
-    // Inject INPUT_DATA into global namespace
+    // Inject INPUT_DATA and BASE_URL into global namespace
     pyodide.globals.set('INPUT_DATA', inputStringData || '');
+    pyodide.globals.set('BASE_URL', appBaseUrl || '');
+    
+    if (appBaseUrl) {
+      console.log('[pyodide.worker.js] Injected BASE_URL into Pyodide globals:', appBaseUrl);
+    }
 
     // Load necessary packages based on imports in the python string
     await pyodide.loadPackagesFromImports(pythonCodeString);

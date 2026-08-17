@@ -419,6 +419,7 @@ async function runPrediction(){
   const btn=document.getElementById('pred-run-btn');
   const inputData={
     state:'maharashtra',
+    baseUrl: typeof window !== 'undefined' ? new URL('.', window.location.href).href : '',
     Age:parseInt(document.getElementById('pred-age').value, 10),
     District:document.getElementById('pred-district').value,
     Gender:document.getElementById('pred-gender').value,
@@ -456,7 +457,10 @@ await main()
         const sorted=Object.entries(data.probabilities).sort((a,b)=>b[1]-a[1]).slice(0,5);
         document.getElementById('proba-bars').innerHTML=sorted.map(([party,pct])=>`<div class="proba-row"><div class="proba-label">${party.length>12?party.slice(0,12)+'…':party}</div><div class="proba-track"><div class="proba-fill" style="width:${pct}%;background:${getPartyStyle(party).dot}"></div></div><div class="proba-pct">${pct}%</div></div>`).join('');
       }
-    }else{showResultError('Prediction error: '+data.message);}
+    }else{
+      console.error(data.traceback);
+      showResultError('Prediction error: '+data.detail);
+    }
   }catch(err){showResultError('Client-side Inference Error: ' + err.message);}
   finally{btn.textContent='🔮 Predict Voting Preference';btn.disabled=false;}
 }
@@ -472,10 +476,10 @@ function showResultError(msg){
 
 buildDashboard();
 checkApiStatus();
-// Expose functions to the global window object for inline HTML event handlers
 window.showPage = showPage;
 window.runPrediction = runPrediction;
 window.closeModal = closeModal;
 window.closeModalDirect = closeModalDirect;
 window.filterCandidates = filterCandidates;
-window.openCandidateModal = openCandidateModal;
+window.openCandidateModal = openModal;
+window.openModal = openModal;

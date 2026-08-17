@@ -38,11 +38,45 @@ OCC_TIPS = {
     "Business":            "Highlight lower taxes and ease-of-doing-business policies.",
 }
 import sys
+import io as _io
+
+# ── NumPy 2.0 → 1.x compatibility ────────────────────────────────────────────
+# Models pickled on NumPy 2.x reference numpy._core.* which does not exist
+# in Pyodide's NumPy 1.x. We patch sys.modules so unpickling remaps correctly.
+import numpy.core
 import numpy.core.numeric
 import numpy.core.multiarray
-sys.modules['numpy._core'] = numpy.core
-sys.modules['numpy._core.numeric'] = numpy.core.numeric
-sys.modules['numpy._core.multiarray'] = numpy.core.multiarray
+import numpy.core.umath
+import numpy.core.fromnumeric
+import numpy.core._methods
+
+sys.modules.setdefault('numpy._core', numpy.core)
+for _key, _mod in list(sys.modules.items()):
+    if _key.startswith('numpy.core'):
+        sys.modules.setdefault(_key.replace('numpy.core', 'numpy._core', 1), _mod)
+
+# Also patch sklearn._libs paths that may differ between versions
+import sklearn.utils._bunch
+sys.modules.setdefault('sklearn.utils.bunch', sklearn.utils._bunch)
+
+class _CompatUnpickler(pickle.Unpickler):
+    """Remap moved modules so models pickled on newer library versions load fine."""
+    _REMAP = {
+        'numpy._core': 'numpy.core',
+        'numpy._core.multiarray': 'numpy.core.multiarray',
+        'numpy._core.numeric': 'numpy.core.numeric',
+        'numpy._core.umath': 'numpy.core.umath',
+        'numpy._core.fromnumeric': 'numpy.core.fromnumeric',
+        'numpy._core._methods': 'numpy.core._methods',
+    }
+    def find_class(self, module, name):
+        module = self._REMAP.get(module, module)
+        return super().find_class(module, name)
+
+def _compat_loads(data):
+    return _CompatUnpickler(_io.BytesIO(data)).load()
+
+# ─────────────────────────────────────────────────────────────────────────────
 
 _model_cache = {}
 _bihar_df = None
@@ -56,7 +90,7 @@ async def load_model(filename, base_val=""):
         if resp.status != 200:
             return {"status": "error", "detail": f"Model {filename} not found. HTTP {resp.status} for URL: {url}"}
         content = await resp.bytes()
-        model = pickle.loads(content)
+        model = _compat_loads(content)
         _model_cache[filename] = model
         return model
     except Exception as e:

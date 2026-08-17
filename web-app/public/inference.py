@@ -76,6 +76,18 @@ class _CompatUnpickler(pickle.Unpickler):
 def _compat_loads(data):
     return _CompatUnpickler(_io.BytesIO(data)).load()
 
+def _patch_sklearn_model(obj):
+    # Recursively patch older scikit-learn estimators to work with newer scikit-learn
+    if hasattr(obj, 'steps'):
+        for name, step in obj.steps:
+            _patch_sklearn_model(step)
+    if hasattr(obj, 'transformers_'):
+        if not hasattr(obj, '_name_to_fitted_passthrough'):
+            obj._name_to_fitted_passthrough = {}
+        for name, transformer, cols in obj.transformers_:
+            _patch_sklearn_model(transformer)
+    return obj
+
 # ─────────────────────────────────────────────────────────────────────────────
 
 _model_cache = {}
@@ -91,10 +103,11 @@ async def load_model(filename, base_val=""):
             return {"status": "error", "detail": f"Model {filename} not found. HTTP {resp.status} for URL: {url}"}
         content = await resp.bytes()
         model = _compat_loads(content)
+        model = _patch_sklearn_model(model)
         _model_cache[filename] = model
         return model
     except Exception as e:
-        return {"status": "error", "detail": f"Exception fetching {url}: {str(e)}"}
+        return {"status": "error", "detail": f"Exception fetching {url}: {str(e)}\n{traceback.format_exc()}"}
 
 async def get_bihar_data(base_val=""):
     global _bihar_df
